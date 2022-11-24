@@ -51,7 +51,7 @@ class Grunt{
         this.tickUpdate = 0
         this.shootTimer = 0
         this.isMovingLeft = false
-        this.speed = Math.floor(Math.random() * 60) +20;
+        this.speed = Math.floor(Math.random() * 60) +30;
     }
     makeSprite(scene, layer)
     {
@@ -94,7 +94,7 @@ class Grunt{
 
     isShooting(scene, layer){
         this.shootTimer++
-        if(this.isAlive == true && this.shootTimer > 1){
+        if(this.isAlive == true && this.shootTimer > 2){
             gruntBullets.push(new EnemyShot(enemies[i].grunt.x, enemies[i].grunt.y, enemies[i].grunt.flipX))
             gruntBullets[gruntBullets.length-1].makeSprite(scene, layer)
             this.shootTimer = 0 
