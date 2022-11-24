@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>JavaScript Demo</title>
     <script src="bullets.js"></script>
+    <script src="collectibles.js"></script>
     <script src="phaser.js"></script>
     <script src="characters.js"></script>
     <style type="text/css">
@@ -37,9 +38,16 @@
     var game = new Phaser.Game(config);
     var platforms;
     var main = new Player(100,true,true,200,600,1);
-    var enemy = new Grunt(100,25,500,600,true)
+    var present1 = new Item(200,300)
+    var present2 = new Item(4500,900)
+    var present3 = new Item(6800,900)
     var ninja = []
-
+    var enemies = []
+    var gruntBullets = []
+    var layer; 
+    var collectible = 0
+    var gameOver = false
+    var target
 
     function preload ()
     {
@@ -49,6 +57,7 @@
         this.load.image('Tiles', 'GameAssets/Rock tile.png');
         this.load.image('Grunt','GameAssets/GruntSprite.png');
         this.load.image('Star','GameAssets/ninjastar.jpg');
+        this.load.image('Present','GameAssets/Collectible.png');
         this.load.tilemapTiledJSON('map','GameAssets/Game map.json');
     }
 
@@ -57,38 +66,123 @@
         this.add.image('400','600','Background').setScale(2);
         const map = this.make.tilemap({key:'map'});
         const tileset = map.addTilesetImage('Rock tile','Tiles');
-        const layer = map.createLayer('Toplayer',tileset,-30,0);
+        layer = map.createLayer('Toplayer',tileset,-30,0);
         layer.setCollisionByExclusion(-1, true);
         main.makeSprite(this);
-        enemy.makeSprite(this);
-
         this.physics.add.collider(main.player,layer);
-        this.physics.add.collider(enemy.grunt,layer);
         
+        spawnEnemies(this, layer)
 
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
+        gameoverText = this.add.text(7100, 600, '',{font: 'calibri'})
+        InstructionText = this.add.text(100, 100, '"WASD" for movement and "SPACE" to shoot')
+        InstructionText.setFontSize(
+            InstructionText.fontsize = 25
+        )
+
+        collectibleText = this.add.text(main.player.x - 100, 1100,'Collectibles = '+ collectible)
+        present1.makeSprite(this)
+        present2.makeSprite(this)
+        present3.makeSprite(this)
 
         //Basic character controls implemented 
         keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-        keyE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+        keyE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     }
 
     function update ()
     {
+        collectibleText.setText('Collectibles = '+collectible) 
+        collectibleText.setScrollFactor(0,0)
         //character movement functions being constantly checked and updated 
-        main.characterMovement(this)
-        enemy.movement()
-        //locks onto character and follows as player moves around the level 
+        main.characterMovement(this, layer)
+
+        //locks onto character and follows as player moves around the level along the X axis
         this.cameras.main.centerOn(main.player.x , 600);
+
         //will check each bullet spawned and update its movement
         for(i = 0; i < ninja.length; i++){
             ninja[i].bulletMovement()
-            this.physics.add.collider(ninja[i],enemy.grunt,()=>{
-            console.log("balls")
-            })
+        }
+
+        //will check each bullet spawned and update its movement
+        for(i = 0; i < gruntBullets.length; i++){
+            gruntBullets[i].shotMovement()
+        }
+
+        for(i = 0; i < enemies.length; i++){
+            if(enemies[i] != null){
+
+                enemies[i].movement(this, layer)
+            } else{
+                console.log("i am a null emeny")
+            }
+        }
+
+        
+        
+        //disable player movement if player falls into a hole. 
+        if(main.player.y > 1200){
+            main.player.disableBody(true, true)
+        }
+        
+        if(main.player.x > 6940){
+            var gameOver = true 
+            gameoverText.setText ([
+                'U Win'
+            ])
+            gameoverText.setFontSize(
+                gameoverText.fontsize = 100
+            )
+        }
+    }
+
+
+
+
+
+
+    //collision functions
+    function hitEnemy(star, enemy)
+    {
+        for(i = 0; i < enemies.length; i++){
+            if (enemies[i].grunt == enemy){
+                enemies[i].isAlive = false            
+            } 
+        }
+        star.disableBody(true, true);
+        enemy.disableBody(true, true);
+  }
+
+    function hitWall(star, layer)
+    {
+        star.disableBody(true, true);
+    }
+
+    function hitPlayer(shot, player)
+    {
+        shot.disableBody(true, true);
+        player.disableBody(true, true);
+    }
+    function hitCollectible(present, player){
+        present.disableBody(true, true);
+        collectible += 1 
+    }
+    
+
+
+    /*enemies spawning loop to spawn multiple enemies throughout the level. Could be used later on with a variable to change the amount
+    to set the difficulty of the game by increasing the enemy amount*/
+    function spawnEnemies(scene, layer){
+        let locX = 400;
+        for(let i = 0; i <= 30; i++){
+            locX += 300
+            let locY = Phaser.Math.Clamp(Math.floor(Math.random() * 800), 300, 800);
+            enemies.push(new Grunt(100, 25, locX, locY, true))
+            enemies[enemies.length-1].makeSprite(scene, layer)
         }
     }
 
